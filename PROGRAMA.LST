@@ -1,0 +1,173 @@
+     1                                  ; programa.asm — Laboratorio Post1 Unidad 4
+     2                                  ; Propósito: demostrar directivas de sección, datos y constantes en NASM
+     3                                  ; Laboratorio NASM - Unidad 4, Parte 1
+     4                                  ; Segmentos, directivas, salida DOS y TIMES
+     5                                  ; Ensamblar: nasm -f obj programa.asm -o programa.obj
+     6                                  ; Enlazar:    alink programa.obj -oEXE -o programa.exe -entry main
+     7                                  
+     8                                  CR          EQU 0Dh
+     9                                  LF          EQU 0Ah
+    10                                  TERMINADOR  EQU 24h
+    11                                  ITERACIONES EQU 5
+    12                                  ANCHO_LINEA EQU 40
+    13                                  
+    14                                  section .data
+    15 00000000 3D3D3D204C61626F72-         bienvenida  db "=== Laboratorio NASM - Unidad 4 ===", CR, LF, TERMINADOR
+    16 00000009 61746F72696F204E41-
+    17 00000012 534D202D20556E6964-
+    18 0000001B 61642034203D3D3D0D-
+    19 00000024 0A24               
+    20 00000026 2D2D2D2D2D2D2D2D2D-         separador   db "----------------------------------------", CR, LF, TERMINADOR
+    21 0000002F 2D2D2D2D2D2D2D2D2D-
+    22 00000038 2D2D2D2D2D2D2D2D2D-
+    23 00000041 2D2D2D2D2D2D2D2D2D-
+    24 0000004A 2D2D2D2D0D0A24     
+    25 00000051 5661726961626C6520-         etiqueta_a  db "Variable A (byte): ", TERMINADOR
+    26 0000005A 41202862797465293A-
+    27 00000063 2024               
+    28 00000065 5461626C6120646520-         etiqueta_tabla db "Tabla de bytes: ", TERMINADOR
+    29 0000006E 62797465733A2024   
+    30 00000076 0D0A50726F6772616D-         fin_msg     db CR, LF, "Programa finalizado correctamente.", CR, LF, TERMINADOR
+    31 0000007F 612066696E616C697A-
+    32 00000088 61646F20636F727265-
+    33 00000091 6374616D656E74652E-
+    34 0000009A 0D0A24             
+    35                                  
+    36                                      linea_gruesa:
+    37 0000009D 3D<rept>                        TIMES ANCHO_LINEA DB '='
+    38 000000C5 0D0A24                          DB CR, LF, TERMINADOR
+    39                                  
+    40 000000C8 2A                          var_byte    db 42
+    41 000000C9 3412                        var_word    dw 1234h
+    42 000000CB EFBEADDE                    var_dword   dd 0DEADBEEFh
+    43 000000CF 0A141E2832                  tabla_bytes db 10, 20, 30, 40, 50
+    44                                  
+    45                                      ; Variables auxiliares para convertir un byte a decimal
+    46 000000D4 00                          centenas    db 0
+    47 000000D5 00                          resto       db 0
+    48                                  
+    49                                  section .bss
+    50 00000000 <res 00000050>              buffer      resb 80
+    51 00000050 <res 00000002>              resultado   resw 1
+    52                                  
+    53                                  section .text
+    54                                      global main
+    55                                  
+    56                                  main:
+    57                                      ; Inicializar DS para acceder a los datos
+    58 00000000 B8[0000]                    mov ax, seg bienvenida
+    59 00000003 8ED8                        mov ds, ax
+    60                                  
+    61                                      ; Mensajes iniciales
+    62 00000005 B409                        mov ah, 09h
+    63 00000007 BA[0000]                    mov dx, bienvenida
+    64 0000000A CD21                        int 21h
+    65                                  
+    66 0000000C B409                        mov ah, 09h
+    67 0000000E BA[2600]                    mov dx, separador
+    68 00000011 CD21                        int 21h
+    69                                  
+    70                                      ; Imprimir el valor decimal de var_byte (42)
+    71 00000013 B409                        mov ah, 09h
+    72 00000015 BA[5100]                    mov dx, etiqueta_a
+    73 00000018 CD21                        int 21h
+    74                                  
+    75 0000001A A0[C800]                    mov al, [var_byte]
+    76 0000001D E83500                      call imprimir_byte_decimal
+    77 00000020 E88400                      call nueva_linea
+    78                                  
+    79                                      ; Recorrer la tabla e imprimir cada elemento en decimal
+    80 00000023 B409                        mov ah, 09h
+    81 00000025 BA[6500]                    mov dx, etiqueta_tabla
+    82 00000028 CD21                        int 21h
+    83                                  
+    84 0000002A 8D36[CF00]                  lea si, [tabla_bytes]
+    85 0000002E B90500                      mov cx, ITERACIONES
+    86                                  
+    87                                  imprimir_tabla:
+    88 00000031 8A04                        mov al, [si]
+    89 00000033 E81F00                      call imprimir_byte_decimal
+    90                                  
+    91 00000036 B402                        mov ah, 02h
+    92 00000038 B220                        mov dl, ' '
+    93 0000003A CD21                        int 21h
+    94                                  
+    95 0000003C 46                          inc si
+    96 0000003D E2F2                        loop imprimir_tabla
+    97                                  
+    98 0000003F E86500                      call nueva_linea
+    99                                  
+   100                                      ; Mensaje final y linea decorativa solicitada
+   101 00000042 B409                        mov ah, 09h
+   102 00000044 BA[7600]                    mov dx, fin_msg
+   103 00000047 CD21                        int 21h
+   104                                  
+   105 00000049 B409                        mov ah, 09h
+   106 0000004B BA[9D00]                    mov dx, linea_gruesa
+   107 0000004E CD21                        int 21h
+   108                                  
+   109                                      ; Terminar correctamente en DOS
+   110 00000050 B8004C                      mov ax, 4C00h
+   111 00000053 CD21                        int 21h
+   112                                  
+   113                                  ; -----------------------------------------
+   114                                  ; imprimir_byte_decimal
+   115                                  ; Entrada: AL = valor de 0 a 255
+   116                                  ; Imprime el valor en decimal usando INT 21h, funcion 02h.
+   117                                  ; -----------------------------------------
+   118                                  imprimir_byte_decimal:
+   119 00000055 50                          push ax
+   120 00000056 53                          push bx
+   121 00000057 52                          push dx
+   122                                  
+   123 00000058 30E4                        xor ah, ah
+   124 0000005A B364                        mov bl, 100
+   125 0000005C F6F3                        div bl              ; AL = centenas, AH = resto
+   126 0000005E A2[D400]                    mov [centenas], al
+   127 00000061 8826[D500]                  mov [resto], ah
+   128                                  
+   129 00000065 803E[D400]00                cmp byte [centenas], 0
+   130 0000006A 740B                        je comprobar_decenas
+   131 0000006C 8A16[D400]                  mov dl, [centenas]
+   132 00000070 80C230                      add dl, '0'
+   133 00000073 B402                        mov ah, 02h
+   134 00000075 CD21                        int 21h
+   135                                  
+   136                                  comprobar_decenas:
+   137 00000077 A0[D500]                    mov al, [resto]
+   138 0000007A 30E4                        xor ah, ah
+   139 0000007C B30A                        mov bl, 10
+   140 0000007E F6F3                        div bl              ; AL = decenas, AH = unidades
+   141 00000080 8826[D500]                  mov [resto], ah
+   142                                  
+   143                                      ; Si hubo centenas, se imprimen decenas incluso si son cero.
+   144 00000084 803E[D400]00                cmp byte [centenas], 0
+   145 00000089 7504                        jne imprimir_decenas
+   146                                      ; Si no hubo centenas, omitir decenas cero.
+   147 0000008B 3C00                        cmp al, 0
+   148 0000008D 7409                        je imprimir_unidades
+   149                                  
+   150                                  imprimir_decenas:
+   151 0000008F 88C2                        mov dl, al
+   152 00000091 80C230                      add dl, '0'
+   153 00000094 B402                        mov ah, 02h
+   154 00000096 CD21                        int 21h
+   155                                  
+   156                                  imprimir_unidades:
+   157 00000098 8A16[D500]                  mov dl, [resto]
+   158 0000009C 80C230                      add dl, '0'
+   159 0000009F B402                        mov ah, 02h
+   160 000000A1 CD21                        int 21h
+   161                                  
+   162 000000A3 5A                          pop dx
+   163 000000A4 5B                          pop bx
+   164 000000A5 58                          pop ax
+   165 000000A6 C3                          ret
+   166                                  
+   167                                  nueva_linea:
+   168 000000A7 B402                        mov ah, 02h
+   169 000000A9 B20D                        mov dl, CR
+   170 000000AB CD21                        int 21h
+   171 000000AD B20A                        mov dl, LF
+   172 000000AF CD21                        int 21h
+   173 000000B1 C3                          ret
